@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Ghost Matrix Sides</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: black;
+      overflow: hidden;
+      height: 100vh;
+      font-family: 'Courier New', monospace;
+      color: #00ff00;
+      display: flex;
+    }
+
+    .matrix-side {
+      width: 25vw;
+      height: 100vh;
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .matrix-center {
+      flex: 1;
+      height: 100vh;
+      position: relative;
+      background: url('esoteric.png') center center / cover no-repeat;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1;
+      overflow: hidden;
+    }
+
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .ghost-matrix {
+      position: relative;
+      text-align: center;
+      max-width: 80%;
+      pointer-events: none;
+      backdrop-filter: blur(2px);
+      background-color: rgba(0, 0, 0, 0.5);
+      padding: 2rem 3rem;
+      border-radius: 12px;
+      animation: floaty 10s ease-in-out infinite, shimmer 4s ease-in-out infinite;
+      z-index: 2;
+    }
+
+    @keyframes floaty {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-2%); }
+    }
+
+    @keyframes shimmer {
+      0%, 100% { filter: blur(0.6px); opacity: 0.95; }
+      40% { filter: blur(0.8px); opacity: 0.98; }
+      70% { filter: blur(0.3px); opacity: 0.92; }
+    }
+
+    .glitch-title {
+      font-size: 3rem;
+      color: #ffffff;
+      font-weight: bold;
+      animation: flashLight 1.5s infinite;
+      text-shadow:
+        0 0 5px #fff,
+        0 0 15px #fff,
+        0 0 25px #fff,
+        0 0 40px white,
+        0 0 60px white;
+      margin-bottom: 1.2rem;
+    }
+
+    @keyframes flashLight {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.2; }
+    }
+
+    .message-content {
+      font-size: 1.6rem;
+      color: #00ffee;
+      line-height: 2;
+      white-space: pre-line;
+      text-shadow:
+        0 0 6px #00ffee,
+        0 0 12px #00ffee,
+        0 0 20px #00ffee,
+        0 0 30px #00ffee;
+    }
+
+    .condition-header {
+      font-size: 1.4rem;
+      color: #ffffff;
+      margin-top: 2rem;
+      margin-bottom: 0.5rem;
+      text-shadow:
+        0 0 5px #fff,
+        0 0 15px #fff,
+        0 0 25px #fff;
+    }
+
+    .code-list {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      font-size: 1.4rem;
+    }
+
+    .code-list span {
+      width: 10ch;
+      text-align: left;
+      color: #00ffff;
+      text-shadow:
+        0 0 5px #00ffff,
+        0 0 15px #00ffff,
+        0 0 30px #00ffff;
+    }
+
+    .typed-banner {
+      margin-top: 2.2rem;
+      font-size: 1.2rem;
+      color: #ffffff;
+      white-space: nowrap;
+      overflow: hidden;
+      width: fit-content;
+      margin-inline: auto;
+      text-shadow:
+        0 0 5px #fff,
+        0 0 15px #fff,
+        0 0 25px #fff,
+        0 0 40px white,
+        0 0 60px white;
+    }
+
+    .typed-banner::after {
+      content: "";
+      display: inline-block;
+      width: 1ch;
+      border-right: 2px solid #ffffff;
+      animation: blinkCursor 0.7s step-end infinite;
+    }
+
+    @keyframes blinkCursor {
+      0%, 100% { border-color: transparent; }
+      50% { border-color: #ffffff; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Left matrix rain -->
+  <div class="matrix-side">
+    <canvas id="leftCanvas"></canvas>
+  </div>
+
+  <!-- Center message board with matrix rain in background -->
+  <div class="matrix-center">
+    <canvas id="centerCanvas"></canvas>
+
+    <div class="ghost-matrix">
+      <div class="glitch-title">Mission Fail!</div>
+
+      <div id="typeLine1" class="message-content"></div>
+      <div id="typeLine2" class="message-content"></div>
+
+      <div class="condition-header">We are operating under condition:</div>
+
+      <div class="code-list">
+        <span>Foxtrot</span>
+        <span>Uniform</span>
+        <span>Charlie</span>
+        <span>Kilo</span>
+        <span>Echo</span>
+        <span>Delta</span>
+      </div>
+
+      <div id="typedBanner" class="typed-banner"></div>
+    </div>
+  </div>
+
+  <!-- Right matrix rain -->
+  <div class="matrix-side">
+    <canvas id="rightCanvas"></canvas>
+  </div>
+
+  <!-- Optional Glitch Sound -->
+  <audio id="glitchSound" src="glitch.mp3" preload="auto"></audio>
+
+  <script>
+    function startMatrixRain(canvasId) {
+      const canvas = document.getElementById(canvasId);
+      const ctx = canvas.getContext('2d');
+
+      function resize() {
+        canvas.width = canvas.offsetWidth;
+        canvas.height = canvas.offsetHeight;
+      }
+
+      resize();
+      window.addEventListener('resize', resize);
+
+      const letters = "アァイィウヴエオカガキギクグケゲコゴサシジスズセゼソゾタダチヂヅテデトドナニヌネノABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".split("");
+      const fontSize = 14;
+      const columns = Math.floor(canvas.width / fontSize);
+      const drops = Array(columns).fill(1);
+
+      function draw() {
+        ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.fillStyle = "#0F0";
+        ctx.font = fontSize + "px monospace";
+
+        for (let i = 0; i < drops.length; i++) {
+          const text = letters[Math.floor(Math.random() * letters.length)];
+          ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+
+          if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+            drops[i] = 0;
+          }
+
+          drops[i]++;
+        }
+      }
+
+      setInterval(draw, 35);
+    }
+
+    function typeText(elementId, text, delay = 60, callback = null) {
+      const el = document.getElementById(elementId);
+      let index = 0;
+
+      function type() {
+        if (index < text.length) {
+          el.textContent += text.charAt(index);
+          index++;
+          setTimeout(type, delay);
+        } else if (callback) {
+          callback();
+        }
+      }
+
+      type();
+    }
+
+    startMatrixRain("leftCanvas");
+    startMatrixRain("rightCanvas");
+    startMatrixRain("centerCanvas");
+
+    window.addEventListener('load', () => {
+      const audio = document.getElementById('glitchSound');
+      if (audio) {
+        audio.play().catch(() => {
+          console.log("Autoplay blocked; user interaction required.");
+        });
+      }
+
+      // Typing sequence
+      setTimeout(() => {
+        typeText("typeLine1", "No Money - No Job", 75, () => {
+          typeText("typeLine2", "No Prospects", 75, () => {
+            typeText("typedBanner", "<solution type='learn to code'></solution>", 45);
+          });
+        });
+      }, 800);
+    });
+  </script>
+</body>
+</html>
